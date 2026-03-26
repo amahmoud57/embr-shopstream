@@ -1,10 +1,11 @@
 platform: nodejs
 platformVersion: "20"
 autoDeploy: true
+buildCommand: "npm install && npm run build"
 
 run:
   port: 3000
-  startCommand: node server.js
+  startCommand: node server/index.js
 
 database:
   enabled: true
@@ -12,3 +13,12 @@ database:
   framework: raw
   schema: db/schema.sql
   seed: "psql \"$DATABASE_URL\" -f db/seed.sql"
+
+static:
+  spaFallback: true
+  headers:
+    "*.js": "public, max-age=31536000, immutable"
+    "*.css": "public, max-age=31536000, immutable"
+
+healthCheck:
+  path: /health
