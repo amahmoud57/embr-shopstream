@@ -1,0 +1,740 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ShopStream — Multi-Vendor Marketplace</title>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:         #0f1117;
+  --bg-card:    #181a23;
+  --bg-sidebar: #13151d;
+  --bg-input:   #1e2030;
+  --bg-hover:   #252839;
+  --border:     #2a2d3e;
+  --text:       #e1e3eb;
+  --text-dim:   #8b8fa3;
+  --text-muted: #5c5f73;
+  --accent:     #6366f1;
+  --accent-dim: #4f46e5;
+  --accent-bg:  rgba(99,102,241,.12);
+  --green:      #22c55e;
+  --green-bg:   rgba(34,197,94,.12);
+  --amber:      #f59e0b;
+  --amber-bg:   rgba(245,158,11,.12);
+  --red:        #ef4444;
+  --red-bg:     rgba(239,68,68,.12);
+  --blue:       #3b82f6;
+  --blue-bg:    rgba(59,130,246,.12);
+  --radius:     10px;
+  --radius-sm:  6px;
+  --shadow:     0 1px 3px rgba(0,0,0,.3), 0 1px 2px rgba(0,0,0,.2);
+  --shadow-lg:  0 10px 30px rgba(0,0,0,.4);
+  --font:       'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+  --transition: 150ms cubic-bezier(.4,0,.2,1);
+}
+[data-theme="light"]{
+  --bg:#f5f6fa;--bg-card:#fff;--bg-sidebar:#fff;--bg-input:#f0f1f5;--bg-hover:#ebedf3;
+  --border:#e2e4ec;--text:#1a1c24;--text-dim:#5c5f73;--text-muted:#9ca0b0;
+  --accent:#4f46e5;--accent-dim:#4338ca;--accent-bg:rgba(79,70,229,.08);
+  --shadow:0 1px 3px rgba(0,0,0,.08),0 1px 2px rgba(0,0,0,.04);
+  --shadow-lg:0 10px 30px rgba(0,0,0,.1);
+}
+html{font-size:14px}
+body{font-family:var(--font);background:var(--bg);color:var(--text);line-height:1.5;overflow:hidden;height:100vh}
+a{color:var(--accent);text-decoration:none}
+button{font-family:inherit;cursor:pointer;border:none;outline:none}
+input,select{font-family:inherit;outline:none}
+
+/* Layout */
+.app{display:flex;height:100vh}
+.sidebar{width:220px;background:var(--bg-sidebar);border-right:1px solid var(--border);display:flex;flex-direction:column;flex-shrink:0;transition:width var(--transition)}
+.sidebar.collapsed{width:60px}
+.sidebar.collapsed .nav-label,.sidebar.collapsed .brand-text,.sidebar.collapsed .sidebar-footer span{display:none}
+.brand{padding:16px 18px;display:flex;align-items:center;gap:10px;border-bottom:1px solid var(--border)}
+.brand-icon{width:32px;height:32px;background:linear-gradient(135deg,var(--accent),#a855f7);border-radius:8px;display:flex;align-items:center;justify-content:center;color:#fff;font-weight:700;font-size:16px;flex-shrink:0}
+.brand-text{font-weight:700;font-size:15px;white-space:nowrap}
+.nav{flex:1;padding:12px 8px;display:flex;flex-direction:column;gap:2px}
+.nav-item{display:flex;align-items:center;gap:10px;padding:9px 12px;border-radius:var(--radius-sm);color:var(--text-dim);cursor:pointer;transition:all var(--transition);white-space:nowrap;font-size:13.5px;font-weight:500}
+.nav-item:hover{background:var(--bg-hover);color:var(--text)}
+.nav-item.active{background:var(--accent-bg);color:var(--accent)}
+.nav-icon{width:18px;text-align:center;flex-shrink:0;font-size:15px}
+.sidebar-footer{padding:12px 14px;border-top:1px solid var(--border);display:flex;align-items:center;gap:8px;font-size:12px;color:var(--text-muted)}
+.sidebar-toggle{width:28px;height:28px;background:var(--bg-input);border:1px solid var(--border);border-radius:var(--radius-sm);display:flex;align-items:center;justify-content:center;cursor:pointer;color:var(--text-dim);flex-shrink:0}
+
+/* Main */
+.main{flex:1;display:flex;flex-direction:column;overflow:hidden}
+.topbar{height:56px;border-bottom:1px solid var(--border);display:flex;align-items:center;padding:0 24px;gap:16px;flex-shrink:0}
+.topbar-title{font-weight:600;font-size:16px;margin-right:auto}
+.search-box{display:flex;align-items:center;background:var(--bg-input);border:1px solid var(--border);border-radius:var(--radius-sm);padding:0 12px;width:280px;transition:border-color var(--transition)}
+.search-box:focus-within{border-color:var(--accent)}
+.search-box input{background:none;border:none;color:var(--text);padding:7px 8px;width:100%;font-size:13px}
+.search-box input::placeholder{color:var(--text-muted)}
+.theme-btn{width:34px;height:34px;border-radius:var(--radius-sm);background:var(--bg-input);border:1px solid var(--border);color:var(--text-dim);display:flex;align-items:center;justify-content:center;font-size:15px}
+.avatar{width:30px;height:30px;border-radius:50%;background:linear-gradient(135deg,var(--accent),#a855f7);display:flex;align-items:center;justify-content:center;color:#fff;font-size:12px;font-weight:600}
+.content{flex:1;overflow-y:auto;padding:24px;scrollbar-width:thin;scrollbar-color:var(--border) transparent}
+.content::-webkit-scrollbar{width:6px}
+.content::-webkit-scrollbar-thumb{background:var(--border);border-radius:3px}
+
+/* Cards & Grid */
+.metric-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:16px;margin-bottom:24px}
+.metric-card{background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius);padding:20px;box-shadow:var(--shadow)}
+.metric-label{font-size:12px;color:var(--text-muted);text-transform:uppercase;letter-spacing:.5px;font-weight:600;margin-bottom:8px}
+.metric-value{font-size:28px;font-weight:700;letter-spacing:-.5px}
+.metric-sub{font-size:12px;color:var(--text-dim);margin-top:4px}
+.mini-bar{display:flex;align-items:flex-end;gap:2px;height:32px;margin-top:10px}
+.mini-bar span{flex:1;background:var(--accent);border-radius:2px;transition:height .4s ease}
+
+.card{background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius);box-shadow:var(--shadow);overflow:hidden}
+.card-header{padding:16px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:between}
+.card-header h3{font-size:14px;font-weight:600;flex:1}
+.card-body{padding:16px 20px}
+
+/* Tables */
+.table-wrap{overflow-x:auto}
+table{width:100%;border-collapse:collapse}
+th{text-align:left;font-size:11px;text-transform:uppercase;letter-spacing:.5px;color:var(--text-muted);font-weight:600;padding:10px 12px;border-bottom:1px solid var(--border)}
+td{padding:10px 12px;border-bottom:1px solid var(--border);font-size:13px;vertical-align:middle}
+tr:hover td{background:var(--bg-hover)}
+.badge{display:inline-flex;align-items:center;gap:5px;padding:3px 10px;border-radius:20px;font-size:11px;font-weight:600;text-transform:capitalize}
+.badge::before{content:'';width:6px;height:6px;border-radius:50%}
+.badge-delivered,.badge-completed{background:var(--green-bg);color:var(--green)}.badge-delivered::before,.badge-completed::before{background:var(--green)}
+.badge-shipped,.badge-processing{background:var(--blue-bg);color:var(--blue)}.badge-shipped::before,.badge-processing::before{background:var(--blue)}
+.badge-confirmed,.badge-pending{background:var(--amber-bg);color:var(--amber)}.badge-confirmed::before,.badge-pending::before{background:var(--amber)}
+.badge-cancelled,.badge-refunded{background:var(--red-bg);color:var(--red)}.badge-cancelled::before,.badge-refunded::before{background:var(--red)}
+
+/* Buttons */
+.btn{display:inline-flex;align-items:center;gap:6px;padding:8px 16px;border-radius:var(--radius-sm);font-size:13px;font-weight:500;transition:all var(--transition)}
+.btn-primary{background:var(--accent);color:#fff}.btn-primary:hover{background:var(--accent-dim)}
+.btn-ghost{background:transparent;color:var(--text-dim);border:1px solid var(--border)}.btn-ghost:hover{background:var(--bg-hover);color:var(--text)}
+.btn-sm{padding:5px 10px;font-size:12px}
+
+/* Product Grid */
+.product-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:16px}
+.product-card{background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;cursor:pointer;transition:all var(--transition);box-shadow:var(--shadow)}
+.product-card:hover{border-color:var(--accent);transform:translateY(-2px);box-shadow:var(--shadow-lg)}
+.product-img{height:160px;display:flex;align-items:center;justify-content:center;font-size:48px;position:relative}
+.product-info{padding:14px}
+.product-name{font-weight:600;font-size:13.5px;margin-bottom:4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.product-vendor{font-size:12px;color:var(--text-muted);margin-bottom:8px}
+.product-price{font-weight:700;font-size:16px;color:var(--accent)}
+.product-compare{font-size:12px;color:var(--text-muted);text-decoration:line-through;margin-left:6px}
+.product-meta{display:flex;align-items:center;justify-content:space-between;margin-top:8px}
+.stars{color:var(--amber);font-size:12px;letter-spacing:1px}
+.stock-badge{font-size:11px;padding:2px 8px;border-radius:10px;font-weight:500}
+.stock-ok{background:var(--green-bg);color:var(--green)}
+.stock-low{background:var(--amber-bg);color:var(--amber)}
+.stock-out{background:var(--red-bg);color:var(--red)}
+
+/* Vendor cards */
+.vendor-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:16px}
+.vendor-card{background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius);padding:20px;box-shadow:var(--shadow);transition:all var(--transition)}
+.vendor-card:hover{border-color:var(--accent)}
+.vendor-avatar{width:48px;height:48px;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:20px;font-weight:700;color:#fff;margin-bottom:12px}
+.vendor-name{font-weight:600;font-size:15px;margin-bottom:2px}
+.vendor-desc{font-size:12.5px;color:var(--text-dim);margin-bottom:12px;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.vendor-stats{display:flex;gap:16px}
+.vendor-stat{font-size:12px;color:var(--text-muted)}
+.vendor-stat strong{color:var(--text);font-weight:600}
+
+/* Charts */
+.chart-bars{display:flex;align-items:flex-end;gap:4px;height:180px;padding-top:8px}
+.chart-bar{flex:1;display:flex;flex-direction:column;align-items:center;gap:4px}
+.chart-bar-fill{width:100%;border-radius:4px 4px 0 0;transition:height .5s ease;min-height:2px}
+.chart-bar-label{font-size:9px;color:var(--text-muted);white-space:nowrap;transform:rotate(-45deg);transform-origin:top left;margin-top:4px}
+.chart-legend{display:flex;gap:16px;margin-top:16px;flex-wrap:wrap}
+.chart-legend-item{display:flex;align-items:center;gap:6px;font-size:12px;color:var(--text-dim)}
+.chart-legend-dot{width:10px;height:10px;border-radius:3px}
+
+/* Donut / Status chart */
+.status-chart{display:flex;gap:24px;align-items:center}
+.status-bars{flex:1}
+.status-row{display:flex;align-items:center;gap:12px;margin-bottom:10px}
+.status-label{width:80px;font-size:12px;font-weight:500;text-transform:capitalize}
+.status-bar-track{flex:1;height:24px;background:var(--bg-input);border-radius:4px;overflow:hidden}
+.status-bar-fill{height:100%;border-radius:4px;transition:width .6s ease;display:flex;align-items:center;padding:0 8px;font-size:11px;font-weight:600;color:#fff;min-width:30px}
+
+/* Toast */
+.toast-container{position:fixed;bottom:24px;right:24px;z-index:9999;display:flex;flex-direction:column;gap:8px}
+.toast{padding:12px 20px;border-radius:var(--radius-sm);color:#fff;font-size:13px;font-weight:500;box-shadow:var(--shadow-lg);animation:slideIn .3s ease;display:flex;align-items:center;gap:8px}
+.toast-success{background:#16a34a}
+.toast-error{background:#dc2626}
+@keyframes slideIn{from{opacity:0;transform:translateX(40px)}to{opacity:1;transform:translateX(0)}}
+
+/* Skeleton loader */
+.skeleton{background:linear-gradient(90deg,var(--bg-input) 25%,var(--bg-hover) 50%,var(--bg-input) 75%);background-size:200% 100%;animation:shimmer 1.5s infinite;border-radius:var(--radius-sm)}
+@keyframes shimmer{0%{background-position:200% 0}100%{background-position:-200% 0}}
+
+/* Slide-out panel */
+.panel-overlay{position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:1000;opacity:0;pointer-events:none;transition:opacity var(--transition)}
+.panel-overlay.open{opacity:1;pointer-events:auto}
+.panel{position:fixed;top:0;right:0;width:480px;max-width:90vw;height:100vh;background:var(--bg-card);border-left:1px solid var(--border);z-index:1001;transform:translateX(100%);transition:transform .25s ease;overflow-y:auto;padding:24px}
+.panel.open{transform:translateX(0)}
+.panel-close{position:absolute;top:16px;right:16px;width:32px;height:32px;border-radius:var(--radius-sm);background:var(--bg-input);border:1px solid var(--border);color:var(--text-dim);display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:16px}
+.review-item{padding:14px 0;border-bottom:1px solid var(--border)}
+.review-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:6px}
+.review-author{font-weight:600;font-size:13px}
+.review-date{font-size:11px;color:var(--text-muted)}
+.review-title{font-weight:500;font-size:13px;margin-bottom:4px}
+.review-body{font-size:12.5px;color:var(--text-dim);line-height:1.6}
+
+/* Pagination */
+.pagination{display:flex;align-items:center;justify-content:center;gap:6px;margin-top:20px}
+.pagination button{width:32px;height:32px;border-radius:var(--radius-sm);border:1px solid var(--border);background:var(--bg-card);color:var(--text-dim);font-size:12px;display:flex;align-items:center;justify-content:center}
+.pagination button:hover{background:var(--bg-hover);color:var(--text)}
+.pagination button.active{background:var(--accent);color:#fff;border-color:var(--accent)}
+.pagination button:disabled{opacity:.4;cursor:not-allowed}
+.page-info{font-size:12px;color:var(--text-muted);margin:0 8px}
+
+/* Filter bar */
+.filter-bar{display:flex;gap:10px;margin-bottom:16px;flex-wrap:wrap;align-items:center}
+.filter-bar select,.filter-bar input{background:var(--bg-input);border:1px solid var(--border);color:var(--text);padding:7px 12px;border-radius:var(--radius-sm);font-size:13px}
+.filter-bar select:focus,.filter-bar input:focus{border-color:var(--accent)}
+
+/* Gradients for product images */
+.grad-1{background:linear-gradient(135deg,#667eea,#764ba2)}
+.grad-2{background:linear-gradient(135deg,#f093fb,#f5576c)}
+.grad-3{background:linear-gradient(135deg,#4facfe,#00f2fe)}
+.grad-4{background:linear-gradient(135deg,#43e97b,#38f9d7)}
+.grad-5{background:linear-gradient(135deg,#fa709a,#fee140)}
+.grad-6{background:linear-gradient(135deg,#a18cd1,#fbc2eb)}
+.grad-7{background:linear-gradient(135deg,#fccb90,#d57eeb)}
+.grad-8{background:linear-gradient(135deg,#e0c3fc,#8ec5fc)}
+.grad-9{background:linear-gradient(135deg,#f5576c,#ff6a00)}
+.grad-10{background:linear-gradient(135deg,#13547a,#80d0c7)}
+
+/* Vendor avatar gradients */
+.vgrad-1{background:linear-gradient(135deg,#6366f1,#8b5cf6)}
+.vgrad-2{background:linear-gradient(135deg,#ec4899,#f43f5e)}
+.vgrad-3{background:linear-gradient(135deg,#14b8a6,#06b6d4)}
+.vgrad-4{background:linear-gradient(135deg,#f97316,#eab308)}
+.vgrad-5{background:linear-gradient(135deg,#8b5cf6,#6366f1)}
+.vgrad-6{background:linear-gradient(135deg,#22c55e,#10b981)}
+.vgrad-7{background:linear-gradient(135deg,#3b82f6,#6366f1)}
+.vgrad-8{background:linear-gradient(135deg,#14b8a6,#22c55e)}
+.vgrad-9{background:linear-gradient(135deg,#f59e0b,#f97316)}
+.vgrad-10{background:linear-gradient(135deg,#ef4444,#f97316)}
+
+/* Two-col layout */
+.two-col{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+@media(max-width:900px){.two-col{grid-template-columns:1fr}}
+
+/* Responsive */
+@media(max-width:768px){
+  .sidebar{position:fixed;z-index:100;transform:translateX(-100%)}
+  .sidebar.mobile-open{transform:translateX(0)}
+  .metric-grid{grid-template-columns:1fr 1fr}
+  .product-grid{grid-template-columns:1fr 1fr}
+}
+
+.loading-screen{display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%;gap:16px;color:var(--text-dim)}
+.spinner{width:32px;height:32px;border:3px solid var(--border);border-top-color:var(--accent);border-radius:50%;animation:spin .6s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+/* Counter animation */
+.counter-animate{transition:all .6s ease}
+</style>
+</head>
+<body>
+<div class="app">
+  <!-- Sidebar -->
+  <aside class="sidebar" id="sidebar">
+    <div class="brand">
+      <div class="brand-icon">S</div>
+      <span class="brand-text">ShopStream</span>
+    </div>
+    <nav class="nav">
+      <div class="nav-item active" data-page="dashboard" onclick="navigate('dashboard')">
+        <span class="nav-icon">◫</span><span class="nav-label">Dashboard</span>
+      </div>
+      <div class="nav-item" data-page="products" onclick="navigate('products')">
+        <span class="nav-icon">▦</span><span class="nav-label">Products</span>
+      </div>
+      <div class="nav-item" data-page="orders" onclick="navigate('orders')">
+        <span class="nav-icon">☰</span><span class="nav-label">Orders</span>
+      </div>
+      <div class="nav-item" data-page="vendors" onclick="navigate('vendors')">
+        <span class="nav-icon">◉</span><span class="nav-label">Vendors</span>
+      </div>
+      <div class="nav-item" data-page="analytics" onclick="navigate('analytics')">
+        <span class="nav-icon">◔</span><span class="nav-label">Analytics</span>
+      </div>
+    </nav>
+    <div class="sidebar-footer">
+      <div class="sidebar-toggle" onclick="toggleSidebar()">◁</div>
+      <span>Powered by Embr</span>
+    </div>
+  </aside>
+
+  <!-- Main -->
+  <div class="main">
+    <header class="topbar">
+      <div class="topbar-title" id="page-title">Dashboard</div>
+      <div class="search-box">
+        <span style="color:var(--text-muted)">⌕</span>
+        <input type="text" placeholder="Search products..." id="global-search" onkeydown="if(event.key==='Enter')doGlobalSearch()">
+      </div>
+      <button class="theme-btn" onclick="toggleTheme()" title="Toggle theme" id="theme-icon">☀</button>
+      <div class="avatar">AD</div>
+    </header>
+    <div class="content" id="content">
+      <div class="loading-screen"><div class="spinner"></div><div>Loading ShopStream...</div></div>
+    </div>
+  </div>
+</div>
+
+<!-- Panel overlay -->
+<div class="panel-overlay" id="panel-overlay" onclick="closePanel()"></div>
+<div class="panel" id="detail-panel">
+  <button class="panel-close" onclick="closePanel()">✕</button>
+  <div id="panel-content"></div>
+</div>
+
+<!-- Toast container -->
+<div class="toast-container" id="toasts"></div>
+
+<script>
+// State
+let currentPage = 'dashboard';
+let dashboardData = null;
+let productsData = null;
+let productsPage = 1;
+let productsCategory = '';
+let productsSort = 'newest';
+let productsSearch = '';
+let ordersData = null;
+let ordersPage = 1;
+let ordersStatus = '';
+let vendorsData = null;
+let analyticsData = {};
+let categoriesData = null;
+
+// Helpers
+const fmt = (cents) => '$' + (cents / 100).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+const fmtNum = (n) => Number(n).toLocaleString('en-US');
+const fmtDate = (d) => new Date(d).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+const fmtDateShort = (d) => new Date(d).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+const stars = (rating) => { const full = Math.floor(rating); const half = rating - full >= 0.5; return '★'.repeat(full) + (half ? '½' : '') + '☆'.repeat(5 - full - (half ? 1 : 0)); };
+const gradClass = (id) => 'grad-' + ((id % 10) + 1);
+const vgradClass = (id) => 'vgrad-' + ((id % 10) + 1);
+const stockClass = (qty) => qty > 20 ? 'stock-ok' : qty > 0 ? 'stock-low' : 'stock-out';
+const stockLabel = (qty) => qty > 20 ? 'In Stock' : qty > 0 ? `${qty} left` : 'Out of Stock';
+
+async function api(path) {
+  const res = await fetch(path);
+  if (!res.ok) throw new Error(`API error: ${res.status}`);
+  return res.json();
+}
+
+async function apiPost(path, body) {
+  const res = await fetch(path, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+  return res.json();
+}
+
+function toast(msg, type = 'success') {
+  const el = document.createElement('div');
+  el.className = `toast toast-${type}`;
+  el.innerHTML = (type === 'success' ? '✓' : '✗') + ' ' + msg;
+  document.getElementById('toasts').appendChild(el);
+  setTimeout(() => el.remove(), 4000);
+}
+
+// Navigation
+function navigate(page) {
+  currentPage = page;
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.toggle('active', n.dataset.page === page));
+  document.getElementById('page-title').textContent = page.charAt(0).toUpperCase() + page.slice(1);
+  loadPage(page);
+}
+
+function toggleSidebar() {
+  document.getElementById('sidebar').classList.toggle('collapsed');
+}
+
+function toggleTheme() {
+  const html = document.documentElement;
+  const isDark = html.getAttribute('data-theme') === 'dark';
+  html.setAttribute('data-theme', isDark ? 'light' : 'dark');
+  document.getElementById('theme-icon').textContent = isDark ? '☾' : '☀';
+}
+
+function doGlobalSearch() {
+  const q = document.getElementById('global-search').value.trim();
+  if (q) { productsSearch = q; productsPage = 1; navigate('products'); }
+}
+
+// Load pages
+async function loadPage(page) {
+  const c = document.getElementById('content');
+  c.innerHTML = '<div class="loading-screen"><div class="spinner"></div><div>Loading...</div></div>';
+  try {
+    switch(page) {
+      case 'dashboard': await loadDashboard(); break;
+      case 'products': await loadProducts(); break;
+      case 'orders': await loadOrders(); break;
+      case 'vendors': await loadVendors(); break;
+      case 'analytics': await loadAnalytics(); break;
+    }
+  } catch(e) {
+    c.innerHTML = `<div class="loading-screen"><div style="color:var(--red)">Error loading data</div><div style="color:var(--text-muted);font-size:12px">${e.message}</div><button class="btn btn-ghost" onclick="loadPage('${page}')" style="margin-top:12px">Retry</button></div>`;
+  }
+}
+
+// ===== DASHBOARD =====
+async function loadDashboard() {
+  const data = await api('/api/dashboard');
+  dashboardData = data;
+  const c = document.getElementById('content');
+
+  const recentRows = data.recent_orders.map(o => `
+    <tr>
+      <td style="font-weight:600">#${o.id}</td>
+      <td>${o.first_name} ${o.last_name}</td>
+      <td><span class="badge badge-${o.status}">${o.status}</span></td>
+      <td>${o.item_count} items</td>
+      <td style="font-weight:600">${fmt(o.total_cents)}</td>
+      <td style="color:var(--text-muted)">${fmtDate(o.created_at)}</td>
+    </tr>
+  `).join('');
+
+  const vendorRows = data.top_vendors.map((v, i) => `
+    <tr>
+      <td style="font-weight:600;color:var(--text-muted)">${i + 1}</td>
+      <td style="font-weight:600">${v.name}</td>
+      <td>${v.product_count} products</td>
+      <td><span class="stars">${stars(v.rating)}</span> ${Number(v.rating).toFixed(1)}</td>
+      <td style="font-weight:600">${fmt(v.revenue)}</td>
+    </tr>
+  `).join('');
+
+  const miniBars = data.orders_by_status.map(s => {
+    const pct = Math.max(5, (s.count / data.order_count * 100));
+    return `<span style="height:${pct}%;background:var(--${s.status === 'delivered' ? 'green' : s.status === 'shipped' ? 'blue' : s.status === 'pending' ? 'amber' : 'accent'})" title="${s.status}: ${s.count}"></span>`;
+  }).join('');
+
+  c.innerHTML = `
+    <div class="metric-grid">
+      <div class="metric-card">
+        <div class="metric-label">Total Revenue</div>
+        <div class="metric-value">${fmt(data.revenue_cents)}</div>
+        <div class="metric-sub">${fmtNum(data.order_count)} orders</div>
+        <div class="mini-bar">${miniBars}</div>
+      </div>
+      <div class="metric-card">
+        <div class="metric-label">Orders</div>
+        <div class="metric-value">${fmtNum(data.order_count)}</div>
+        <div class="metric-sub">${data.orders_by_status.map(s => `${s.count} ${s.status}`).join(', ')}</div>
+      </div>
+      <div class="metric-card">
+        <div class="metric-label">Customers</div>
+        <div class="metric-value">${fmtNum(data.customer_count)}</div>
+        <div class="metric-sub">Registered accounts</div>
+      </div>
+      <div class="metric-card">
+        <div class="metric-label">Active Products</div>
+        <div class="metric-value">${fmtNum(data.product_count)}</div>
+        <div class="metric-sub">${data.top_vendors.length} vendors</div>
+      </div>
+    </div>
+    <div class="two-col">
+      <div class="card">
+        <div class="card-header"><h3>Recent Orders</h3></div>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>ID</th><th>Customer</th><th>Status</th><th>Items</th><th>Total</th><th>Date</th></tr></thead>
+            <tbody>${recentRows}</tbody>
+          </table>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-header"><h3>Top Vendors</h3></div>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>#</th><th>Vendor</th><th>Products</th><th>Rating</th><th>Revenue</th></tr></thead>
+            <tbody>${vendorRows}</tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+// ===== PRODUCTS =====
+async function loadProducts() {
+  if (!categoriesData) {
+    try { categoriesData = (await api('/api/categories')).categories; } catch(e) { categoriesData = []; }
+  }
+  const params = new URLSearchParams({ page: productsPage, limit: 24, sort: productsSort });
+  if (productsSearch) params.set('search', productsSearch);
+  if (productsCategory) params.set('category', productsCategory);
+  const data = await api('/api/products?' + params);
+  productsData = data;
+
+  const catOptions = categoriesData.map(c => `<option value="${c.id}" ${productsCategory == c.id ? 'selected' : ''}>${c.icon || ''} ${c.name}</option>`).join('');
+
+  const cards = data.products.map(p => `
+    <div class="product-card" onclick="showProduct(${p.id})">
+      <div class="product-img ${gradClass(p.id)}">${(categoriesData.find(c => c.id === p.category_id) || {}).icon || '📦'}</div>
+      <div class="product-info">
+        <div class="product-name">${p.name}</div>
+        <div class="product-vendor">${p.vendor_name}</div>
+        <div>
+          <span class="product-price">${fmt(p.price_cents)}</span>
+          ${p.compare_price_cents ? `<span class="product-compare">${fmt(p.compare_price_cents)}</span>` : ''}
+        </div>
+        <div class="product-meta">
+          <span class="stars" title="${Number(p.rating_avg).toFixed(1)}">${stars(p.rating_avg)}</span>
+          <span class="stock-badge ${stockClass(p.stock_qty)}">${stockLabel(p.stock_qty)}</span>
+        </div>
+      </div>
+    </div>
+  `).join('');
+
+  const c = document.getElementById('content');
+  c.innerHTML = `
+    <div class="filter-bar">
+      <input type="text" placeholder="Search products..." value="${productsSearch}" onkeydown="if(event.key==='Enter'){productsSearch=this.value;productsPage=1;loadProducts()}" style="width:220px" id="prod-search">
+      <select onchange="productsCategory=this.value;productsPage=1;loadProducts()">
+        <option value="">All Categories</option>${catOptions}
+      </select>
+      <select onchange="productsSort=this.value;productsPage=1;loadProducts()">
+        <option value="newest" ${productsSort==='newest'?'selected':''}>Newest</option>
+        <option value="price" ${productsSort==='price'?'selected':''}>Price</option>
+        <option value="rating" ${productsSort==='rating'?'selected':''}>Rating</option>
+        <option value="name" ${productsSort==='name'?'selected':''}>Name</option>
+      </select>
+      ${productsSearch ? `<button class="btn btn-ghost btn-sm" onclick="productsSearch='';productsPage=1;loadProducts()">✕ Clear search</button>` : ''}
+      <span style="margin-left:auto;font-size:12px;color:var(--text-muted)">${fmtNum(data.total)} products</span>
+    </div>
+    <div class="product-grid">${cards}</div>
+    ${renderPagination(data.page, data.pages, data.total, (p) => { productsPage = p; loadProducts(); })}
+  `;
+}
+
+async function showProduct(id) {
+  const { product: p, reviews } = await api(`/api/products/${id}`);
+  const panel = document.getElementById('panel-content');
+  const reviewsHtml = reviews.length ? reviews.map(r => `
+    <div class="review-item">
+      <div class="review-header">
+        <span class="review-author">${r.first_name} ${r.last_name} ${r.is_verified ? '<span style="color:var(--green);font-size:11px">✓ Verified</span>' : ''}</span>
+        <span class="review-date">${fmtDate(r.created_at)}</span>
+      </div>
+      <div class="stars" style="margin-bottom:4px">${stars(r.rating)}</div>
+      ${r.title ? `<div class="review-title">${r.title}</div>` : ''}
+      <div class="review-body">${r.body}</div>
+    </div>
+  `).join('') : '<div style="padding:20px 0;color:var(--text-muted);font-size:13px">No reviews yet</div>';
+
+  panel.innerHTML = `
+    <div class="product-img ${gradClass(p.id)}" style="height:200px;border-radius:var(--radius);margin-bottom:16px;font-size:64px">${(categoriesData || []).find(c => c.id === p.category_id)?.icon || '📦'}</div>
+    <h2 style="font-size:20px;font-weight:700;margin-bottom:4px">${p.name}</h2>
+    <div style="font-size:13px;color:var(--text-dim);margin-bottom:12px">by ${p.vendor_name} · ${p.category_name}</div>
+    <div style="margin-bottom:16px">
+      <span style="font-size:24px;font-weight:700;color:var(--accent)">${fmt(p.price_cents)}</span>
+      ${p.compare_price_cents ? `<span style="font-size:14px;color:var(--text-muted);text-decoration:line-through;margin-left:8px">${fmt(p.compare_price_cents)}</span>` : ''}
+    </div>
+    <div style="display:flex;gap:16px;margin-bottom:16px;font-size:13px">
+      <span><strong>Rating:</strong> <span class="stars">${stars(p.rating_avg)}</span> ${Number(p.rating_avg).toFixed(1)} (${p.review_count})</span>
+      <span><strong>Stock:</strong> <span class="stock-badge ${stockClass(p.stock_qty)}">${stockLabel(p.stock_qty)}</span></span>
+    </div>
+    <div style="font-size:13px;color:var(--text-dim);margin-bottom:20px;line-height:1.7">${p.description || 'No description available.'}</div>
+    <div style="font-size:12px;color:var(--text-muted);margin-bottom:20px">SKU: ${p.sku || 'N/A'}</div>
+    <h3 style="font-size:14px;font-weight:600;margin-bottom:12px">Reviews (${reviews.length})</h3>
+    ${reviewsHtml}
+  `;
+  document.getElementById('panel-overlay').classList.add('open');
+  document.getElementById('detail-panel').classList.add('open');
+}
+
+function closePanel() {
+  document.getElementById('panel-overlay').classList.remove('open');
+  document.getElementById('detail-panel').classList.remove('open');
+}
+
+// ===== ORDERS =====
+async function loadOrders() {
+  const params = new URLSearchParams({ page: ordersPage, limit: 20 });
+  if (ordersStatus) params.set('status', ordersStatus);
+  const data = await api('/api/orders?' + params);
+  ordersData = data;
+
+  const rows = data.orders.map(o => `
+    <tr>
+      <td style="font-weight:600">#${o.id}</td>
+      <td>${o.first_name} ${o.last_name}</td>
+      <td>${o.email}</td>
+      <td><span class="badge badge-${o.status}">${o.status}</span></td>
+      <td>${o.item_count} items</td>
+      <td style="font-weight:600">${fmt(o.total_cents)}</td>
+      <td style="color:var(--text-muted)">${fmtDate(o.created_at)}</td>
+    </tr>
+  `).join('');
+
+  const c = document.getElementById('content');
+  c.innerHTML = `
+    <div class="filter-bar">
+      <select onchange="ordersStatus=this.value;ordersPage=1;loadOrders()">
+        <option value="">All Statuses</option>
+        <option value="pending" ${ordersStatus==='pending'?'selected':''}>Pending</option>
+        <option value="confirmed" ${ordersStatus==='confirmed'?'selected':''}>Confirmed</option>
+        <option value="processing" ${ordersStatus==='processing'?'selected':''}>Processing</option>
+        <option value="shipped" ${ordersStatus==='shipped'?'selected':''}>Shipped</option>
+        <option value="delivered" ${ordersStatus==='delivered'?'selected':''}>Delivered</option>
+      </select>
+      <button class="btn btn-primary" onclick="placeTestOrder()">+ Place Test Order</button>
+      <span style="margin-left:auto;font-size:12px;color:var(--text-muted)">${fmtNum(data.total)} orders</span>
+    </div>
+    <div class="card">
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>ID</th><th>Customer</th><th>Email</th><th>Status</th><th>Items</th><th>Total</th><th>Date</th></tr></thead>
+          <tbody>${rows}</tbody>
+        </table>
+      </div>
+    </div>
+    ${renderPagination(data.page, data.pages, data.total, (p) => { ordersPage = p; loadOrders(); })}
+  `;
+}
+
+async function placeTestOrder() {
+  try {
+    const products = productsData ? productsData.products.slice(0, 3) : (await api('/api/products?limit=3')).products;
+    if (!products.length) { toast('No products available', 'error'); return; }
+    const items = products.slice(0, 2).map(p => ({ product_id: p.id, quantity: 1 }));
+    const result = await apiPost('/api/orders', { customer_id: 1, items });
+    if (result.error) { toast(result.error, 'error'); return; }
+    toast(`Order #${result.order.id} created — ${fmt(result.order.total_cents)}`);
+    loadOrders();
+  } catch(e) { toast(e.message, 'error'); }
+}
+
+// ===== VENDORS =====
+async function loadVendors() {
+  const data = await api('/api/vendors');
+  vendorsData = data.vendors;
+  const cards = data.vendors.map(v => `
+    <div class="vendor-card" onclick="showVendor(${v.id})">
+      <div class="vendor-avatar ${vgradClass(v.id)}">${v.name.charAt(0)}</div>
+      <div class="vendor-name">${v.name}</div>
+      <div class="vendor-desc">${v.description || ''}</div>
+      <div class="vendor-stats">
+        <div class="vendor-stat"><strong>${v.product_count}</strong> products</div>
+        <div class="vendor-stat"><strong>${Number(v.rating).toFixed(1)}</strong> ★ rating</div>
+        <div class="vendor-stat">Joined ${fmtDate(v.created_at)}</div>
+      </div>
+    </div>
+  `).join('');
+
+  document.getElementById('content').innerHTML = `<div class="vendor-grid">${cards}</div>`;
+}
+
+async function showVendor(id) {
+  const { vendor: v, products } = await api(`/api/vendors/${id}`);
+  const panel = document.getElementById('panel-content');
+  const prodList = products.map(p => `
+    <div style="display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid var(--border);cursor:pointer" onclick="closePanel();setTimeout(()=>showProduct(${p.id}),200)">
+      <div class="${gradClass(p.id)}" style="width:40px;height:40px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0">${p.category_name ? '' : '📦'}</div>
+      <div style="flex:1;min-width:0">
+        <div style="font-weight:600;font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${p.name}</div>
+        <div style="font-size:12px;color:var(--text-muted)">${p.category_name}</div>
+      </div>
+      <div style="font-weight:600;font-size:13px">${fmt(p.price_cents)}</div>
+    </div>
+  `).join('');
+  panel.innerHTML = `
+    <div class="vendor-avatar ${vgradClass(v.id)}" style="width:64px;height:64px;font-size:28px;border-radius:16px;margin-bottom:16px">${v.name.charAt(0)}</div>
+    <h2 style="font-size:20px;font-weight:700;margin-bottom:4px">${v.name}</h2>
+    <div style="font-size:13px;color:var(--text-dim);margin-bottom:12px">${v.email}</div>
+    <div style="font-size:13px;color:var(--text-dim);margin-bottom:16px;line-height:1.7">${v.description || ''}</div>
+    <div style="display:flex;gap:16px;margin-bottom:20px;font-size:13px">
+      <span><strong>Rating:</strong> <span class="stars">${stars(v.rating)}</span> ${Number(v.rating).toFixed(1)}</span>
+    </div>
+    <h3 style="font-size:14px;font-weight:600;margin-bottom:12px">Products (${products.length})</h3>
+    ${prodList}
+  `;
+  document.getElementById('panel-overlay').classList.add('open');
+  document.getElementById('detail-panel').classList.add('open');
+}
+
+// ===== ANALYTICS =====
+async function loadAnalytics() {
+  const [revenue, topProducts, dashboard] = await Promise.all([
+    api('/api/analytics/revenue?period=day&limit=14'),
+    api('/api/analytics/top-products?limit=10'),
+    dashboardData ? Promise.resolve(dashboardData) : api('/api/dashboard')
+  ]);
+  dashboardData = dashboard;
+
+  const maxRev = Math.max(...revenue.revenue.map(r => parseInt(r.revenue)), 1);
+  const bars = revenue.revenue.map(r => {
+    const h = Math.max(3, (parseInt(r.revenue) / maxRev * 100));
+    return `<div class="chart-bar"><div class="chart-bar-fill" style="height:${h}%;background:var(--accent)" title="${fmt(r.revenue)} (${r.order_count} orders)"></div><div class="chart-bar-label">${fmtDateShort(r.period)}</div></div>`;
+  }).join('');
+
+  const topRows = topProducts.products.map((p, i) => `
+    <tr>
+      <td style="font-weight:600;color:var(--text-muted)">${i + 1}</td>
+      <td style="font-weight:600">${p.name}</td>
+      <td>${p.vendor_name}</td>
+      <td>${fmtNum(p.total_sold)} units</td>
+      <td style="font-weight:600">${fmt(p.total_revenue)}</td>
+    </tr>
+  `).join('');
+
+  // Status chart
+  const totalOrders = dashboard.orders_by_status.reduce((s, x) => s + parseInt(x.count), 0);
+  const statusColors = { delivered: 'var(--green)', shipped: 'var(--blue)', processing: 'var(--accent)', confirmed: 'var(--amber)', pending: 'var(--amber)', cancelled: 'var(--red)' };
+  const statusBars = dashboard.orders_by_status.map(s => {
+    const pct = (parseInt(s.count) / totalOrders * 100).toFixed(1);
+    return `<div class="status-row">
+      <div class="status-label">${s.status}</div>
+      <div class="status-bar-track"><div class="status-bar-fill" style="width:${pct}%;background:${statusColors[s.status] || 'var(--accent)'}">${s.count}</div></div>
+    </div>`;
+  }).join('');
+
+  document.getElementById('content').innerHTML = `
+    <div class="two-col" style="margin-bottom:24px">
+      <div class="card">
+        <div class="card-header"><h3>Revenue (Last 14 Days)</h3></div>
+        <div class="card-body">
+          <div class="chart-bars">${bars}</div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-header"><h3>Orders by Status</h3></div>
+        <div class="card-body"><div class="status-bars">${statusBars}</div></div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-header"><h3>Top 10 Products by Revenue</h3></div>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>#</th><th>Product</th><th>Vendor</th><th>Sold</th><th>Revenue</th></tr></thead>
+          <tbody>${topRows}</tbody>
+        </table>
+      </div>
+    </div>
+  `;
+}
+
+// Pagination helper
+function renderPagination(page, pages, total, onNavigate) {
+  if (pages <= 1) return '';
+  let btns = '';
+  btns += `<button ${page <= 1 ? 'disabled' : ''} onclick="(${onNavigate.toString()})(${page - 1})">‹</button>`;
+  const start = Math.max(1, page - 2);
+  const end = Math.min(pages, start + 4);
+  for (let i = start; i <= end; i++) {
+    btns += `<button class="${i === page ? 'active' : ''}" onclick="(${onNavigate.toString()})(${i})">${i}</button>`;
+  }
+  btns += `<button ${page >= pages ? 'disabled' : ''} onclick="(${onNavigate.toString()})(${page + 1})">›</button>`;
+  return `<div class="pagination">${btns}<span class="page-info">Page ${page} of ${pages} (${fmtNum(total)} total)</span></div>`;
+}
+
+// Init
+navigate('dashboard');
+</script>
+</body>
+</html>
