@@ -1,7 +1,6 @@
 platform: nodejs
 platformVersion: "20"
 autoDeploy: true
-buildCommand: "npm install && npm run build"
 
 run:
   port: 3000
