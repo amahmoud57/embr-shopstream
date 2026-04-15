@@ -108,3 +108,5 @@ CREATE INDEX IF NOT EXISTS idx_reviews_product ON reviews(product_id);
 CREATE INDEX IF NOT EXISTS idx_reviews_customer ON reviews(customer_id);
 CREATE INDEX IF NOT EXISTS idx_inventory_product ON inventory_events(product_id);
 CREATE INDEX IF NOT EXISTS idx_inventory_created ON inventory_events(created_at);
+
+-- Force schema sync 2026-04-15 16:45:12
